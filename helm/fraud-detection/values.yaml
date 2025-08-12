@@ -1,0 +1,139 @@
+global:
+  security:
+    allowInsecureImages: true
+
+replicaCount: 2
+
+image:
+  repository: fraud-detection/anomaly-detector
+  tag: "latest"
+  pullPolicy: Never
+
+# Add missing fields referenced in deployment template
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8001"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: LoadBalancer
+  port: 8000
+  metricsPort: 8001
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: fraud-api.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: fraud-detection-tls
+      hosts:
+        - fraud-api.yourdomain.com
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 300Mi
+  requests:
+    cpu: 150m
+    memory: 150Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - fraud-detection
+        topologyKey: kubernetes.io/hostname
+
+# External Dependencies
+postgresql:
+  enabled: true
+  auth:
+    username: fraud_user
+    password: fraud_pass
+    database: fraud_detection
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+kafka:
+  clusterId: 204affff-9e26-4164-9e11-79b4b66a9380
+  enabled: true
+  replicaCount: 1
+  persistence:
+    enabled: true
+    size: 10Gi
+  headlessService:
+    enabled: true
+  config: |-
+    process.roles=broker,controller
+    controller.quorum.voters=1@fraud-detection-kafka-0.fraud-detection-kafka-headless.fraud-detection.svc.cluster.local:9093,2@fraud-detection-kafka-1.fraud-detection-kafka-headless.fraud-detection.svc.cluster.local:9093,3@fraud-detection-kafka-2.fraud-detection-kafka-headless.fraud-detection.svc.cluster.local:9093
+
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 20Gi
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 2Gi
+  adminPassword: admin123

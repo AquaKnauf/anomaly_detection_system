@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: fraud-detection
+data:
+  KAFKA_SERVERS: "kafka-service:9092"
+  REDIS_HOST: "redis-service"
+  POSTGRES_URL: "postgresql://fraud_user:fraud_pass@postgres-service:5432/fraud_detection"

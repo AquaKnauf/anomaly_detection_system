@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: fraud-detection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:latest
+        ports:
+        - containerPort: 9092
+        env:
+          - name: KAFKA_PROCESS_ROLES
+            value: "broker,controller"
+          - name: KAFKA_NODE_ID
+            value: "1"
+          - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+            value: "1@kafka-service:9093"
+          - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+            value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+          - name: KAFKA_INTER_BROKER_LISTENER_NAME
+            value: "PLAINTEXT"
+          - name: KAFKA_CONTROLLER_LISTENER_NAMES
+            value: "CONTROLLER"
+          - name: KAFKA_LISTENERS
+            value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+          - name: KAFKA_ADVERTISED_LISTENERS
+            value: "PLAINTEXT://kafka-service:9092,CONTROLLER://kafka-service:9093"
+          - name: KAFKA_LOG_DIRS
+            value: "/var/lib/kafka/data"
+          - name: CLUSTER_ID
+            value: "7905de41-f001-4169-bf6e-ede2c45d5251"
+        resources:
+          requests:
+            memory: "250Mi"
+            cpu: "250m"
+          limits:
+            memory: "500Mi"
+            cpu: "500m"
