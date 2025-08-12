@@ -30,7 +30,7 @@ A production-ready system for detecting fraudulent and suspicious financial tran
 ### Local Development
 ```bash
 # Clone repository
-git clone <your-repo-url>
+git clone https://github.com/AquaKnauf/anomaly_detection_system.git
 cd fraud-detection
 
 # Setup development environment
